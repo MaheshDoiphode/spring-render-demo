@@ -1,0 +1,1519 @@
+package com.color.colorapp;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+@EnableScheduling
+@SpringBootApplication
+public class DemoApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+
+    @Scheduled(fixedRate = 300000) // 5 minutes in milliseconds
+    public void keepAlive() {
+        RestTemplate restTemplate = new RestTemplate();
+        String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
+        System.out.println("Response from /hello endpoint: " + response);
+    }
+}
+
+@RestController
+class Hello{
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello";
+    }
+}
+
+//package com.color.colorapp.config;
+//import com.color.colorapp.entity.*;
+//
+//import org.mapstruct.Mapper;
+//import org.mapstruct.factory.Mappers;
+//
+//@Mapper
+//public interface CMapper {
+//
+//    CMapper INSTANCE = Mappers.getMapper(CMapper.class);
+//
+//    RoundDto roundToRoundDto(Round round);
+//    Round roundDtoToRound(RoundDto roundDto);
+//
+//}
+package com.color.colorapp.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**").allowedOrigins("*");
+            }
+        };
+    }
+}
+package com.color.colorapp.controller;
+
+import com.color.colorapp.dto.BetPlacementDTO;
+import com.color.colorapp.dto.RechargeDTO;
+import com.color.colorapp.dto.RoundResultDTO;
+import com.color.colorapp.dto.WithdrawalDTO;
+import com.color.colorapp.service.FinanceService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/finance")
+public class FinanceController {
+
+    @Autowired
+    private FinanceService financeService;
+
+    @PostMapping("/bet")
+    public ResponseEntity<?> placeBet(@RequestBody BetPlacementDTO betDto) {
+        try {
+            financeService.placeBet(betDto);
+            return ResponseEntity.ok("Bet placed successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error placing bet");
+        }
+    }
+
+    @PostMapping("/result")
+    public ResponseEntity<?> declareRoundResult(@RequestBody RoundResultDTO resultDto) {
+        try {
+            financeService.declareRoundResult(resultDto);
+            return ResponseEntity.ok("Round result declared successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error declaring round result");
+        }
+    }
+
+
+
+    //release 3 :
+    @PostMapping("/recharge")
+    public ResponseEntity<?> rechargeAccount(@RequestBody RechargeDTO rechargeDto) {
+        try {
+            financeService.rechargeAccount(rechargeDto);
+            return ResponseEntity.ok("Account recharged successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/withdrawal")
+    public ResponseEntity<?> withdrawAmount(@RequestBody WithdrawalDTO withdrawalDto) {
+        try {
+            financeService.withdrawAmount(withdrawalDto);
+            return ResponseEntity.ok("Amount withdrawn successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+
+
+
+
+}package com.color.colorapp.controller;
+
+import com.color.colorapp.service.FinanceService;
+import com.color.colorapp.service.GameService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/game")
+public class GameController {
+
+    @Autowired
+    private GameService gameService;
+
+
+    @Scheduled(fixedDelay = 150000) // 2.5 minutes
+    public void manageGameClosure() {
+        gameService.phase2(); // Close betting, generate random number, update balances, etc.
+    }
+
+    @Scheduled(fixedDelay = 180000) // 3 minutes
+    public void startNewRound() {
+        gameService.startNewBettingRound(); // Create and open a new round for betting
+    }
+
+
+}
+package com.color.colorapp.controller;
+
+import com.color.colorapp.dto.BankDetailsDTO;
+import com.color.colorapp.dto.UpiDTO;
+import com.color.colorapp.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+
+
+    @Autowired
+    private UserService userService;
+    @PostMapping("/register")
+    public ResponseEntity<String> registerUser(@RequestBody Object userDto) {
+        // Placeholder for registration logic
+        return ResponseEntity.ok("Registration Okay");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> loginUser(@RequestBody Object loginDto) {
+        // Placeholder for login logic
+        return ResponseEntity.ok("Login Okay");
+    }
+
+    // release 3:
+    @PostMapping("/add_upi_option")
+    public ResponseEntity<?> addUpiOption(@RequestBody UpiDTO upiDto) {
+        try {
+            userService.addUpiId(upiDto);
+            return ResponseEntity.ok("UPI ID added successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/add_bank_option")
+    public ResponseEntity<?> addBankOption(@RequestBody BankDetailsDTO bankDetailsDto) {
+        try {
+            userService.addBankDetails(bankDetailsDto);
+            return ResponseEntity.ok("Bank details added successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+
+}
+package com.color.colorapp.dto;
+
+public class BankDetailsDTO {
+    private String username;
+    private String bankName;
+    private String accountNumber;
+    private String ifscCode;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+    public String getIfscCode() {
+        return ifscCode;
+    }
+
+    public void setIfscCode(String ifscCode) {
+        this.ifscCode = ifscCode;
+    }
+}
+package com.color.colorapp.dto;
+
+public class BetPlacementDTO {
+    private String username;
+    private Double betAmount;
+    private String betType; // "color" or "number"
+    private String betValue; // e.g., "red" or "7"
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Double getBetAmount() {
+        return betAmount;
+    }
+
+    public void setBetAmount(Double betAmount) {
+        this.betAmount = betAmount;
+    }
+
+    public String getBetType() {
+        return betType;
+    }
+
+    public void setBetType(String betType) {
+        this.betType = betType;
+    }
+
+    public String getBetValue() {
+        return betValue;
+    }
+
+    public void setBetValue(String betValue) {
+        this.betValue = betValue;
+    }
+}
+package com.color.colorapp.dto;
+
+public class RechargeDTO {
+    private String username;
+    private Double amount;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
+}
+package com.color.colorapp.dto;
+
+public class RoundResultDTO {
+    private String roundId;
+    private int winningNumber;
+
+    public String getRoundId() {
+        return roundId;
+    }
+
+    public void setRoundId(String roundId) {
+        this.roundId = roundId;
+    }
+
+    public int getWinningNumber() {
+        return winningNumber;
+    }
+
+    public void setWinningNumber(int winningNumber) {
+        this.winningNumber = winningNumber;
+    }
+}
+package com.color.colorapp.dto;
+
+public class UpiDTO {
+    private String username;
+    private String password;
+    private String upiId;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getUpiId() {
+        return upiId;
+    }
+
+    public void setUpiId(String upiId) {
+        this.upiId = upiId;
+    }
+}
+package com.color.colorapp.dto;
+
+public class UserLoginDTO {
+    private String username;
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
+package com.color.colorapp.dto;
+
+import java.time.LocalDate;
+
+public class UserRegistrationDTO {
+    private String username;
+    private String email;
+    private String password;
+    private LocalDate dateOfBirth;
+    private String contactNumber;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+}
+package com.color.colorapp.dto;
+
+public class WithdrawalDTO {
+    private String username;
+    private String password;
+    private Double amount;
+    private String withdrawalMethod; // "bank" or "upi"
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
+
+    public String getWithdrawalMethod() {
+        return withdrawalMethod;
+    }
+
+    public void setWithdrawalMethod(String withdrawalMethod) {
+        this.withdrawalMethod = withdrawalMethod;
+    }
+}
+package com.color.colorapp.entity;
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "bank_details")
+public class BankDetail {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column
+    private String bankName;
+
+    @Column
+    private String accountNumber;
+
+    @Column
+    private String ifscCode;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+    public String getIfscCode() {
+        return ifscCode;
+    }
+
+    public void setIfscCode(String ifscCode) {
+        this.ifscCode = ifscCode;
+    }
+}
+package com.color.colorapp.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Date;
+
+@Entity
+@Table(name = "game_details")
+public class GameDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column
+    private double platform_balance;
+
+    @Column
+    private int last_round_no;
+
+    @Column
+    private Date last_round_date;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public double getPlatform_balance() {
+        return platform_balance;
+    }
+
+    public void setPlatform_balance(double platform_balance) {
+        this.platform_balance = platform_balance;
+    }
+
+    public int getLast_round_no() {
+        return last_round_no;
+    }
+
+    public void setLast_round_no(int last_round_no) {
+        this.last_round_no = last_round_no;
+    }
+
+    public Date getLast_round_date() {
+        return last_round_date;
+    }
+
+    public void setLast_round_date(Date last_round_date) {
+        this.last_round_date = last_round_date;
+    }
+}package com.color.colorapp.entity;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.Instant;
+import java.util.List;
+
+@Document(collection = "rounds")
+public class Round {
+    @Id
+    private String id;
+
+    private String roundId;
+    private List<Bet> bets;
+    private Result result;
+    private Instant timestamp;
+    private String status;
+
+    public static class Bet {
+        private Long userId;
+        private String betType; // "color" or "number"
+        private String betValue; // Color name or number
+        private Double betAmount;
+        private Double payout;
+        private String result; // "win", "lose", "pending"
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public void setUserId(Long userId) {
+            this.userId = userId;
+        }
+
+        public String getBetType() {
+            return betType;
+        }
+
+        public void setBetType(String betType) {
+            this.betType = betType;
+        }
+
+        public String getBetValue() {
+            return betValue;
+        }
+
+        public void setBetValue(String betValue) {
+            this.betValue = betValue;
+        }
+
+        public Double getBetAmount() {
+            return betAmount;
+        }
+
+        public void setBetAmount(Double betAmount) {
+            this.betAmount = betAmount;
+        }
+
+        public Double getPayout() {
+            return payout;
+        }
+
+        public void setPayout(Double payout) {
+            this.payout = payout;
+        }
+
+        public String getResult() {
+            return result;
+        }
+
+        public void setResult(String result) {
+            this.result = result;
+        }
+    }
+
+    public static class Result {
+        private Integer winningNumber;
+        private String winningColor;
+        public Result(Integer winningNumber, String winningColor) {
+            this.winningNumber = winningNumber;
+            this.winningColor = winningColor;
+        }
+
+        public Integer getWinningNumber() {
+            return winningNumber;
+        }
+
+        public void setWinningNumber(Integer winningNumber) {
+            this.winningNumber = winningNumber;
+        }
+
+        public String getWinningColor() {
+            return winningColor;
+        }
+
+        public void setWinningColor(String winningColor) {
+            this.winningColor = winningColor;
+        }
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getRoundId() {
+        return roundId;
+    }
+
+    public void setRoundId(String roundId) {
+        this.roundId = roundId;
+    }
+
+    public List<Bet> getBets() {
+        return bets;
+    }
+
+    public void setBets(List<Bet> bets) {
+        this.bets = bets;
+    }
+
+    public Result getResult() {
+        return result;
+    }
+
+    public void setResult(Result result) {
+        this.result = result;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Instant timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    private Double totalBettingAmount;
+
+    public Double getTotalBettingAmount() {
+        return totalBettingAmount;
+    }
+
+    public void setTotalBettingAmount(Double totalBettingAmount) {
+        this.totalBettingAmount = totalBettingAmount;
+    }
+}
+package com.color.colorapp.entity;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.Instant;
+
+@Document(collection = "transactions")
+public class Transaction {
+    @Id
+    private String id;
+
+    private Long userId;
+    private String type; // "deposit", etc.
+    private Double amount;
+    private String status;
+    private String method; // "UPI", etc.
+    private Instant timestamp;
+    private Details details;
+
+    public static class Details {
+        private String reference;
+
+        public String getReference() {
+            return reference;
+        }
+
+        public void setReference(String reference) {
+            this.reference = reference;
+        }
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Instant timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Details getDetails() {
+        return details;
+    }
+
+    public void setDetails(Details details) {
+        this.details = details;
+    }
+}
+package com.color.colorapp.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "upi_details")
+public class UpiDetail {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column
+    private String upiId;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getUpiId() {
+        return upiId;
+    }
+
+    public void setUpiId(String upiId) {
+        this.upiId = upiId;
+    }
+}package com.color.colorapp.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userId;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String username;
+
+    @Column(nullable = false, unique = true, length = 255)
+    private String email;
+
+    @Column(nullable = false)
+    private String textPassword;
+
+    @Column
+    private LocalDateTime dateOfBirth;
+
+    @Column(length = 15)
+    private String contactNumber;
+
+    @Column(nullable = false)
+    private LocalDateTime registrationDate;
+
+
+
+    @Column
+    private Double walletBalance;
+
+    public Double getWalletBalance() {
+        return walletBalance;
+    }
+
+    public void setWalletBalance(Double walletBalance) {
+        this.walletBalance = walletBalance;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTextPassword() {
+        return textPassword;
+    }
+
+    public void setTextPassword(String textPassword) {
+        this.textPassword = textPassword;
+    }
+
+    public LocalDateTime getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDateTime dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public LocalDateTime getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public void setRegistrationDate(LocalDateTime registrationDate) {
+        this.registrationDate = registrationDate;
+    }
+}
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.BankDetail;
+import com.color.colorapp.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface BankDetailRepository extends JpaRepository<BankDetail, Long> {
+    BankDetail findByUserIdAndBankNameAndAccountNumber(Long userId, String bankName, String accountNumber);
+}
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.Finance;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface FinanceRepository extends JpaRepository<Finance, Long> {
+    // Additional query methods if needed
+}
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.Finance;
+import com.color.colorapp.entity.GameDetails;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface GameDetailsRepository extends JpaRepository<GameDetails, Integer> {
+
+    GameDetails findTopByOrderByIdDesc();
+}
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.Round;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+
+@Repository
+public interface RoundRepository extends MongoRepository<Round, String> {
+    Round findTopByRoundIdStartingWithOrderByRoundIdDesc(String roundIdPrefix);
+
+    Round findByRoundId(String roundId);
+}
+
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.Round;
+import com.color.colorapp.entity.Transaction;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+
+@Repository
+public interface TransactionRepository extends MongoRepository<Transaction, String> {
+}
+
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.UpiDetail;
+import com.color.colorapp.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UpiDetailRepository extends JpaRepository<UpiDetail, Long> {
+    UpiDetail findByUserIdAndUpiId(Long userId, String upiId);
+}
+package com.color.colorapp.repository;
+
+import com.color.colorapp.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+}
+package com.color.colorapp.service;
+
+import com.color.colorapp.dto.*;
+import com.color.colorapp.entity.*;
+import com.color.colorapp.repository.GameDetailsRepository;
+import com.color.colorapp.repository.RoundRepository;
+import com.color.colorapp.repository.TransactionRepository;
+import com.color.colorapp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+
+@Service
+public class FinanceService {
+
+    private final RoundRepository roundRepository;
+    private final UserRepository userRepository;
+    private final GameDetailsRepository gameDetailsRepository;
+    private final TransactionRepository transactionRepository;
+    @Autowired
+    public FinanceService(RoundRepository roundRepository, UserRepository userRepository, GameDetailsRepository gameDetailsRepository, TransactionRepository transactionRepository) {
+        this.roundRepository = roundRepository;
+        this.userRepository = userRepository;
+        this.gameDetailsRepository = gameDetailsRepository;
+        this.transactionRepository = transactionRepository;
+    }
+
+    public void closeBetting() {
+        Round currentRound = getCurrentRound();
+        if (currentRound != null && "ongoing".equals(currentRound.getStatus())) {
+            currentRound.setStatus("betting closed");
+            roundRepository.save(currentRound);
+        }
+    }
+
+    @Transactional
+    public void placeBet(BetPlacementDTO betDto) {
+        User user = userRepository.findByUsername(betDto.getUsername());
+
+        if (user == null || user.getWalletBalance() < betDto.getBetAmount()) {
+            throw new RuntimeException("Invalid user or insufficient balance");
+        }
+
+        Round currentRound = getCurrentRound();
+        if (currentRound == null || !"ongoing".equals(currentRound.getStatus())) {
+            throw new RuntimeException("Betting is closed for the current round");
+        }
+
+
+
+        user.setWalletBalance(user.getWalletBalance() - betDto.getBetAmount());
+        userRepository.save(user);
+
+
+        Round.Bet bet = createBetFromDTO(betDto, user.getUserId());
+        currentRound.getBets().add(bet);
+        currentRound.setTotalBettingAmount(currentRound.getTotalBettingAmount() + betDto.getBetAmount());
+        roundRepository.save(currentRound);
+        updatePlatformBalance(2.0);
+    }
+
+
+
+    @Transactional
+    public void declareRoundResult(RoundResultDTO resultDto) {
+        Round round = roundRepository.findByRoundId(resultDto.getRoundId());
+        if (round == null) {
+            throw new RuntimeException("Round not found");
+        }
+        String winningColor = getWinningColor(resultDto.getWinningNumber());
+        round.setResult(new Round.Result(resultDto.getWinningNumber(), winningColor));
+        round.setStatus("completed");
+        roundRepository.save(round);
+
+        round.getBets().forEach(bet -> {
+            if (isBetWinning(bet, resultDto.getWinningNumber())) {
+                double payout = calculatePayout(bet);
+                updateUserBalance(bet.getUserId(), payout);
+            }
+        });
+
+        double totalPayouts = calculateTotalPayouts(round);
+        double totalBets = round.getBets().stream().mapToDouble(Round.Bet::getBetAmount).sum();
+        double serviceFees = round.getBets().size() * 2; // Assuming a fixed service fee of 2 units
+        double earningsFromRound = totalBets - totalPayouts + serviceFees;
+
+        updatePlatformBalance(earningsFromRound);
+    }
+
+    private boolean isBetWinning(Round.Bet bet, int winningNumber) {
+        if ("number".equals(bet.getBetType())) {
+            return bet.getBetValue().equals(String.valueOf(winningNumber));
+        } else {
+            return isWinningColor(bet.getBetValue(), winningNumber);
+        }
+    }
+
+    private boolean isWinningColor(String color, int number) {
+        switch (color) {
+            case "green":
+                return number == 1 || number == 3 || number == 7 || number == 9;
+            case "red":
+                return number == 2 || number == 4 || number == 6 || number == 8 || number == 0;
+            case "violet":
+                return number == 0 || number == 5;
+            default:
+                return false;
+        }
+    }
+
+    private double calculatePayout(Round.Bet bet) {
+        double contractAmount = bet.getBetAmount() - 2; // Deducting service fee
+        if ("number".equals(bet.getBetType())) {
+            return contractAmount * 9; // SELECT NUMBER
+        } else if ("green".equals(bet.getBetType()) || "red".equals(bet.getBetType())) {
+            return contractAmount * 2; // JOIN GREEN or RED
+        } else if ("violet".equals(bet.getBetType())) {
+            return contractAmount * 4.5; // JOIN VIOLET
+        }
+        return 0;
+    }
+
+    private void updateUserBalance(Long userId, double payout) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            user.setWalletBalance(user.getWalletBalance() + payout);
+            userRepository.save(user);
+        }
+    }
+
+
+    private void updatePlatformBalance(double earningsFromRound) {
+        GameDetails gameDetails = gameDetailsRepository.findTopByOrderByIdDesc();
+        if (gameDetails == null) {
+            gameDetails = new GameDetails();
+            gameDetails.setPlatform_balance(0);
+            gameDetails.setLast_round_no(0);
+            gameDetails.setLast_round_date(new Date());
+        }
+        gameDetails.setPlatform_balance(gameDetails.getPlatform_balance() + earningsFromRound);
+        gameDetailsRepository.save(gameDetails);
+    }
+
+
+    private double calculateTotalPayouts(Round round) {
+        return round.getBets().stream()
+                .filter(bet -> isBetWinning(bet, round.getResult().getWinningNumber()))
+                .mapToDouble(bet -> calculatePayout(bet))
+                .sum();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    private Round getCurrentRound() {
+        String todayRoundIdPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix);
+    }
+
+    private Round.Bet createBetFromDTO(BetPlacementDTO betDto, Long userId) {
+        Round.Bet bet = new Round.Bet();
+        bet.setUserId(userId);
+        bet.setBetType(betDto.getBetType());
+        bet.setBetValue(betDto.getBetValue());
+        bet.setBetAmount(betDto.getBetAmount());
+        bet.setPayout(0.0); // Initial payout is 0, to be updated after round result
+        bet.setResult("pending"); // Initial result status
+        return bet;
+    }
+
+
+
+
+    private String getWinningColor(int winningNumber) {
+        switch (winningNumber) {
+            case 0: return "purple";
+            case 1:
+            case 3:
+            case 7:
+            case 9: return "green";
+            case 2:
+            case 4:
+            case 6:
+            case 8: return "red";
+            case 5: return "violet";
+            default: return "";
+        }
+    }
+
+
+
+
+    //release 3:
+    @Transactional
+    public void rechargeAccount(RechargeDTO rechargeDto) {
+        User user = userRepository.findByUsername(rechargeDto.getUsername());
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        if (rechargeDto.getAmount() <= 0) {
+            throw new IllegalArgumentException("Invalid recharge amount");
+        }
+
+        user.setWalletBalance(user.getWalletBalance() + rechargeDto.getAmount());
+        userRepository.save(user);
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(user.getUserId());
+        transaction.setType("deposit");
+        transaction.setAmount(rechargeDto.getAmount());
+        transaction.setStatus("completed");
+        transaction.setTimestamp(Instant.now());
+        transactionRepository.save(transaction);
+    }
+
+    @Transactional
+    public void withdrawAmount(WithdrawalDTO withdrawalDto) {
+        User user = userRepository.findByUsername(withdrawalDto.getUsername());
+        if (user == null || !user.getTextPassword().equals(withdrawalDto.getPassword())) {
+            throw new IllegalArgumentException("Invalid username or password");
+        }
+
+        if (withdrawalDto.getAmount() <= 0 || user.getWalletBalance() < withdrawalDto.getAmount()) {
+            throw new IllegalArgumentException("Invalid withdrawal amount");
+        }
+
+        user.setWalletBalance(user.getWalletBalance() - withdrawalDto.getAmount());
+        userRepository.save(user);
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(user.getUserId());
+        transaction.setType("withdrawal");
+        transaction.setAmount(withdrawalDto.getAmount());
+        transaction.setStatus("completed");
+        transaction.setMethod(withdrawalDto.getWithdrawalMethod());
+        transaction.setTimestamp(Instant.now());
+        // Set additional transaction details if needed
+        transactionRepository.save(transaction);
+    }
+
+
+}
+package com.color.colorapp.service;
+
+import com.color.colorapp.dto.RoundResultDTO;
+import com.color.colorapp.entity.Round;
+import com.color.colorapp.repository.RoundRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Random;
+
+@Service
+public class GameService {
+
+    @Autowired
+    private RoundRepository roundRepository;
+
+    @Autowired
+    private FinanceService financeService;
+
+    private final Random random = new Random();
+
+    public void phase2() {
+        // Close the current round and process results
+        Round currentRound = getCurrentRound();
+        if (currentRound != null && "ongoing".equals(currentRound.getStatus())) {
+            currentRound.setStatus("betting closed");
+
+            // Generate a random winning number
+            int winningNumber = random.nextInt(10); // Random number between 0 and 9
+            if (currentRound.getResult() == null) {
+                currentRound.setResult(new Round.Result(null, null));
+            }
+            currentRound.getResult().setWinningNumber(winningNumber);
+
+            roundRepository.save(currentRound);
+
+            RoundResultDTO resultDto = new RoundResultDTO();
+            resultDto.setRoundId(currentRound.getRoundId());
+            resultDto.setWinningNumber(winningNumber);
+            financeService.declareRoundResult(resultDto);
+        }
+    }
+
+    public void startNewBettingRound() {
+        // Create a new round
+        String newRoundId = generateNewRoundId();
+        Round newRound = new Round();
+        newRound.setRoundId(newRoundId);
+        newRound.setStatus("ongoing");
+        newRound.setTimestamp(Instant.now());
+        newRound.setBets(new ArrayList<>());
+        roundRepository.save(newRound);
+    }
+
+    private Round getCurrentRound() {
+        String todayRoundIdPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix);
+    }
+
+
+    private String generateNewRoundId() {
+        String todayRoundIdPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        Round lastRound = roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix);
+
+        int nextRoundNumber = 1;
+        if (lastRound != null && lastRound.getRoundId().startsWith(todayRoundIdPrefix)) {
+            try {
+                String lastRoundNumberStr = lastRound.getRoundId().substring(8);
+                int lastRoundNumber = Integer.parseInt(lastRoundNumberStr);
+                nextRoundNumber = lastRoundNumber + 1;
+            } catch (NumberFormatException e) {
+                System.out.println("an unexpected format in the round ID");
+            }
+        }
+        return todayRoundIdPrefix + String.format("%02d", nextRoundNumber);
+    }
+
+
+    // Other methods and logic...
+}
+package com.color.colorapp.service;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RoundService {
+
+    @Scheduled(fixedDelay = 180000) // 3 minutes
+    public void processRound() {
+        // Logic for processing the round
+    }
+}
+package com.color.colorapp.service;
+
+import com.color.colorapp.dto.BankDetailsDTO;
+import com.color.colorapp.dto.UpiDTO;
+import com.color.colorapp.dto.UserLoginDTO;
+import com.color.colorapp.dto.UserRegistrationDTO;
+import com.color.colorapp.entity.BankDetail;
+import com.color.colorapp.entity.UpiDetail;
+import com.color.colorapp.entity.User;
+import com.color.colorapp.repository.BankDetailRepository;
+import com.color.colorapp.repository.UpiDetailRepository;
+import com.color.colorapp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final UpiDetailRepository upiDetailRepository;
+    private final BankDetailRepository bankDetailRepository;
+    @Autowired
+    private UserService(UserRepository userRepository, UpiDetailRepository upiDetailRepository, BankDetailRepository bankDetailRepository){
+        this.userRepository = userRepository;
+
+        this.upiDetailRepository = upiDetailRepository;
+        this.bankDetailRepository = bankDetailRepository;
+    }
+
+
+    public User registerUser(UserRegistrationDTO registrationDTO) {
+        User newUser = new User();
+        newUser.setUsername(registrationDTO.getUsername());
+        newUser.setEmail(registrationDTO.getEmail());
+        newUser.setTextPassword(registrationDTO.getPassword());
+        newUser.setDateOfBirth(registrationDTO.getDateOfBirth().atStartOfDay());
+        newUser.setContactNumber(registrationDTO.getContactNumber());
+        newUser.setRegistrationDate(LocalDateTime.now());
+
+        return userRepository.save(newUser);
+    }
+
+    public boolean loginUser(UserLoginDTO loginDTO) {
+        User user = userRepository.findByUsername(loginDTO.getUsername());
+        return user != null && loginDTO.getPassword().equals(user.getTextPassword());
+    }
+
+    // release 3:
+    public void addUpiId(UpiDTO upiDto) {
+        User user = userRepository.findByUsername(upiDto.getUsername());
+        validateUserCredentials(user, upiDto.getPassword());
+
+        UpiDetail existingUpiDetail = upiDetailRepository.findByUserIdAndUpiId(user.getUserId(), upiDto.getUpiId());
+        if (existingUpiDetail == null) {
+            UpiDetail upiDetail = new UpiDetail();
+            upiDetail.setUserId(user.getUserId());
+            upiDetail.setUpiId(upiDto.getUpiId());
+            upiDetailRepository.save(upiDetail);
+        } else {
+            throw new IllegalArgumentException("UPI ID already exists for this user");
+        }
+    }
+
+    public void addBankDetails(BankDetailsDTO bankDetailsDto) {
+        User user = userRepository.findByUsername(bankDetailsDto.getUsername());
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        BankDetail existingBankDetail = bankDetailRepository.findByUserIdAndBankNameAndAccountNumber(
+                user.getUserId(), bankDetailsDto.getBankName(), bankDetailsDto.getAccountNumber());
+        if (existingBankDetail == null) {
+            BankDetail bankDetail = new BankDetail();
+            bankDetail.setUserId(user.getUserId());
+            bankDetail.setBankName(bankDetailsDto.getBankName());
+            bankDetail.setAccountNumber(bankDetailsDto.getAccountNumber());
+            bankDetail.setIfscCode(bankDetailsDto.getIfscCode());
+            bankDetailRepository.save(bankDetail);
+        } else {
+            throw new IllegalArgumentException("Bank account already exists for this user");
+        }
+    }
+
+    private void validateUserCredentials(User user, String password) {
+        if (user == null || !user.getTextPassword().equals(password)) {
+            throw new IllegalArgumentException("Invalid username or password");
+        }
+    }
+
+}

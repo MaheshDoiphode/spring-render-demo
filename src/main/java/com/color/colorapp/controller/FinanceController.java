@@ -1,9 +1,12 @@
 package com.color.colorapp.controller;
 
 import com.color.colorapp.dto.BetPlacementDTO;
+import com.color.colorapp.dto.RechargeDTO;
 import com.color.colorapp.dto.RoundResultDTO;
+import com.color.colorapp.dto.WithdrawalDTO;
 import com.color.colorapp.service.FinanceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,5 +37,31 @@ public class FinanceController {
         }
     }
 
-    // Add more endpoints if necessary
+
+
+    //release 3 :
+    @PostMapping("/recharge")
+    public ResponseEntity<?> rechargeAccount(@RequestBody RechargeDTO rechargeDto) {
+        try {
+            financeService.rechargeAccount(rechargeDto);
+            return ResponseEntity.ok("Account recharged successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/withdrawal")
+    public ResponseEntity<?> withdrawAmount(@RequestBody WithdrawalDTO withdrawalDto) {
+        try {
+            financeService.withdrawAmount(withdrawalDto);
+            return ResponseEntity.ok("Amount withdrawn successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+
+
+
+
 }

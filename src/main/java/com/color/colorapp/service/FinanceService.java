@@ -1,10 +1,10 @@
 package com.color.colorapp.service;
 
-import com.color.colorapp.dto.BetPlacementDTO;
-import com.color.colorapp.dto.RoundResultDTO;
+import com.color.colorapp.dto.*;
 import com.color.colorapp.entity.*;
 import com.color.colorapp.repository.GameDetailsRepository;
 import com.color.colorapp.repository.RoundRepository;
+import com.color.colorapp.repository.TransactionRepository;
 import com.color.colorapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.List;
 
 @Service
 public class FinanceService {
@@ -22,11 +21,13 @@ public class FinanceService {
     private final RoundRepository roundRepository;
     private final UserRepository userRepository;
     private final GameDetailsRepository gameDetailsRepository;
+    private final TransactionRepository transactionRepository;
     @Autowired
-    public FinanceService(RoundRepository roundRepository, UserRepository userRepository, GameDetailsRepository gameDetailsRepository) {
+    public FinanceService(RoundRepository roundRepository, UserRepository userRepository, GameDetailsRepository gameDetailsRepository, TransactionRepository transactionRepository) {
         this.roundRepository = roundRepository;
         this.userRepository = userRepository;
         this.gameDetailsRepository = gameDetailsRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     public void closeBetting() {
@@ -198,4 +199,58 @@ public class FinanceService {
             default: return "";
         }
     }
+
+
+
+
+    //release 3:
+    @Transactional
+    public void rechargeAccount(RechargeDTO rechargeDto) {
+        User user = userRepository.findByUsername(rechargeDto.getUsername());
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        if (rechargeDto.getAmount() <= 0) {
+            throw new IllegalArgumentException("Invalid recharge amount");
+        }
+
+        user.setWalletBalance(user.getWalletBalance() + rechargeDto.getAmount());
+        userRepository.save(user);
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(user.getUserId());
+        transaction.setType("deposit");
+        transaction.setAmount(rechargeDto.getAmount());
+        transaction.setStatus("completed");
+        transaction.setTimestamp(Instant.now());
+        transactionRepository.save(transaction);
+    }
+
+    @Transactional
+    public void withdrawAmount(WithdrawalDTO withdrawalDto) {
+        User user = userRepository.findByUsername(withdrawalDto.getUsername());
+        if (user == null || !user.getTextPassword().equals(withdrawalDto.getPassword())) {
+            throw new IllegalArgumentException("Invalid username or password");
+        }
+
+        if (withdrawalDto.getAmount() <= 0 || user.getWalletBalance() < withdrawalDto.getAmount()) {
+            throw new IllegalArgumentException("Invalid withdrawal amount");
+        }
+
+        user.setWalletBalance(user.getWalletBalance() - withdrawalDto.getAmount());
+        userRepository.save(user);
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(user.getUserId());
+        transaction.setType("withdrawal");
+        transaction.setAmount(withdrawalDto.getAmount());
+        transaction.setStatus("completed");
+        transaction.setMethod(withdrawalDto.getWithdrawalMethod());
+        transaction.setTimestamp(Instant.now());
+        // Set additional transaction details if needed
+        transactionRepository.save(transaction);
+    }
+
+
 }
