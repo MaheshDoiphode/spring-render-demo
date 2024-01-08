@@ -21,7 +21,7 @@ FROM openjdk:17-jdk-slim
 EXPOSE 8080
 
 # Copy the JAR from the build stage to the runtime stage
-COPY --from=build target/demo-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build target/colorapp-0.0.1.jar app.jar
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
