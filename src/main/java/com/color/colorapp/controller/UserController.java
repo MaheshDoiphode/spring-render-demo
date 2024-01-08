@@ -1,7 +1,7 @@
 package com.color.colorapp.controller;
 
-import com.color.colorapp.dto.BankDetailsDTO;
-import com.color.colorapp.dto.UpiDTO;
+import com.color.colorapp.dto.*;
+import com.color.colorapp.entity.User;
 import com.color.colorapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,16 +16,29 @@ public class UserController {
     @Autowired
     private UserService userService;
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody Object userDto) {
-        // Placeholder for registration logic
-        return ResponseEntity.ok("Registration Okay");
+    public ResponseEntity<String> registerUser(@RequestBody UserRegistrationDTO userDto) {
+        try {
+            User newUser = userService.registerUser(userDto);
+            return ResponseEntity.ok("User registered successfully with ID: " + newUser.getUserId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
+        }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody Object loginDto) {
-        // Placeholder for login logic
-        return ResponseEntity.ok("Login Okay");
+    public ResponseEntity<String> loginUser(@RequestBody UserLoginDTO loginDto) {
+        try {
+            boolean isLoginSuccessful = userService.loginUser(loginDto);
+            if (isLoginSuccessful) {
+                return ResponseEntity.ok("Login successful for user: " + loginDto.getUsername());
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed: Invalid username or password");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed: " + e.getMessage());
+        }
     }
+
 
     // release 3:
     @PostMapping("/add_upi_option")

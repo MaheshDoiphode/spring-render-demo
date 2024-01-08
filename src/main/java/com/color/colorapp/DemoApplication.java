@@ -21,6 +21,10 @@ public class DemoApplication {
         String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
         System.out.println("Response from /hello endpoint: " + response);
     }
+
+
+
+
 }
 
 @RestController
