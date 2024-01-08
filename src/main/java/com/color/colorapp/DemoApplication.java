@@ -3,7 +3,9 @@ package com.color.colorapp;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 @EnableScheduling
 @SpringBootApplication
@@ -13,6 +15,12 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
+    @Scheduled(fixedRate = 300000) // 5 minutes in milliseconds
+    public void keepAlive() {
+        RestTemplate restTemplate = new RestTemplate();
+        String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
+        System.out.println("Response from /hello endpoint: " + response);
+    }
 }
 
 @RestController
@@ -22,3 +30,4 @@ class Hello{
         return "Hello";
     }
 }
+
