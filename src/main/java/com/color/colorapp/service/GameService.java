@@ -86,9 +86,5 @@ public class GameService {
 
     // release 4 : Webscockets and integrating with angular
 
-//    public void broadcastTimer() {
-//        // Logic to calculate the remaining time for the current round
-//        String remainingTime = "03:00"; // e.g., "02:14"
-//        template.convertAndSend("/topic/timer", remainingTime);
-//    }
+
 }
