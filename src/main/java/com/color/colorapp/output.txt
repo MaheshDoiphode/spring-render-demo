@@ -21,6 +21,10 @@ public class DemoApplication {
         String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
         System.out.println("Response from /hello endpoint: " + response);
     }
+
+
+
+
 }
 
 @RestController
@@ -31,7 +35,44 @@ class Hello{
     }
 }
 
-//package com.color.colorapp.config;
+package com.color.colorapp;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+@EnableScheduling
+@SpringBootApplication
+public class DemoApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+
+    @Scheduled(fixedRate = 300000) // 5 minutes in milliseconds
+    public void keepAlive() {
+        RestTemplate restTemplate = new RestTemplate();
+        String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
+        System.out.println("Response from /hello endpoint: " + response);
+    }
+
+
+
+
+}
+
+@RestController
+class Hello{
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello";
+    }
+}
+
+packa//package com.color.colorapp.config;
 //import com.color.colorapp.entity.*;
 //
 //import org.mapstruct.Mapper;
@@ -65,6 +106,29 @@ public class WebConfig {
             }
         };
     }
+}
+package com.color.colorapp.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").withSockJS();
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
+    }
+    
 }
 package com.color.colorapp.controller;
 
@@ -140,6 +204,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
+import com.color.colorapp.dto.*;
+import com.color.colorapp.entity.*;
+
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/game")
@@ -147,6 +215,41 @@ public class GameController {
 
     @Autowired
     private GameService gameService;
+
+    @GetMapping("/rounds")
+    public ResponseEntity<List<RoundDto>> getRounds() {
+        List<Round> rounds = roundService.getAllRounds();
+        List<RoundDto> roundDtos = rounds.stream()
+                .map(CMapper.INSTANCE::roundToRoundDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(roundDtos);
+    }
+
+    private RoundDto convertToDto(Round round) {
+        // Convert Round entity to RoundDto
+        RoundDto dto = new RoundDto();
+        // Set properties from round to dto
+        return dto;
+    }*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     @Scheduled(fixedDelay = 150000) // 2.5 minutes
@@ -163,8 +266,8 @@ public class GameController {
 }
 package com.color.colorapp.controller;
 
-import com.color.colorapp.dto.BankDetailsDTO;
-import com.color.colorapp.dto.UpiDTO;
+import com.color.colorapp.dto.*;
+import com.color.colorapp.entity.User;
 import com.color.colorapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -179,16 +282,29 @@ public class UserController {
     @Autowired
     private UserService userService;
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody Object userDto) {
-        // Placeholder for registration logic
-        return ResponseEntity.ok("Registration Okay");
+    public ResponseEntity<String> registerUser(@RequestBody UserRegistrationDTO userDto) {
+        try {
+            User newUser = userService.registerUser(userDto);
+            return ResponseEntity.ok("User registered successfully with ID: " + newUser.getUserId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
+        }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody Object loginDto) {
-        // Placeholder for login logic
-        return ResponseEntity.ok("Login Okay");
+    public ResponseEntity<String> loginUser(@RequestBody UserLoginDTO loginDto) {
+        try {
+            boolean isLoginSuccessful = userService.loginUser(loginDto);
+            if (isLoginSuccessful) {
+                return ResponseEntity.ok("Login successful for user: " + loginDto.getUsername());
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed: Invalid username or password");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed: " + e.getMessage());
+        }
     }
+
 
     // release 3:
     @PostMapping("/add_upi_option")
@@ -314,6 +430,10 @@ public class RechargeDTO {
     public void setAmount(Double amount) {
         this.amount = amount;
     }
+}
+package com.color.colorapp.dto;
+
+public class RoundDto {
 }
 package com.color.colorapp.dto;
 
@@ -1003,17 +1123,6 @@ public interface BankDetailRepository extends JpaRepository<BankDetail, Long> {
 }
 package com.color.colorapp.repository;
 
-import com.color.colorapp.entity.Finance;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface FinanceRepository extends JpaRepository<Finance, Long> {
-    // Additional query methods if needed
-}
-package com.color.colorapp.repository;
-
-import com.color.colorapp.entity.Finance;
 import com.color.colorapp.entity.GameDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -1334,6 +1443,7 @@ import com.color.colorapp.dto.RoundResultDTO;
 import com.color.colorapp.entity.Round;
 import com.color.colorapp.repository.RoundRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -1350,6 +1460,8 @@ public class GameService {
 
     @Autowired
     private FinanceService financeService;
+    @Autowired
+    private SimpMessagingTemplate template;
 
     private final Random random = new Random();
 
@@ -1410,19 +1522,39 @@ public class GameService {
     }
 
 
-    // Other methods and logic...
+
+    // release 4 : Webscockets and integrating with angular
+
+    public void broadcastTimer() {
+        // Logic to calculate the remaining time for the current round
+        String remainingTime = "03:00"; // e.g., "02:14"
+        template.convertAndSend("/topic/timer", remainingTime);
+    }
 }
 package com.color.colorapp.service;
 
+import com.color.colorapp.entity.Round;
+import com.color.colorapp.repository.RoundRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class RoundService {
 
+
+    @Autowired
+    private RoundRepository roundRepository;
+
     @Scheduled(fixedDelay = 180000) // 3 minutes
     public void processRound() {
         // Logic for processing the round
+    }
+
+    public List<Round> getAllRounds() {
+        return roundRepository.findAll();
     }
 }
 package com.color.colorapp.service;

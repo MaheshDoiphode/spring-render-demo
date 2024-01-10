@@ -4,6 +4,7 @@ import com.color.colorapp.dto.RoundResultDTO;
 import com.color.colorapp.entity.Round;
 import com.color.colorapp.repository.RoundRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -20,6 +21,8 @@ public class GameService {
 
     @Autowired
     private FinanceService financeService;
+    @Autowired
+    private SimpMessagingTemplate template;
 
     private final Random random = new Random();
 
@@ -80,5 +83,12 @@ public class GameService {
     }
 
 
-    // Other methods and logic...
+
+    // release 4 : Webscockets and integrating with angular
+
+    public void broadcastTimer() {
+        // Logic to calculate the remaining time for the current round
+        String remainingTime = "03:00"; // e.g., "02:14"
+        template.convertAndSend("/topic/timer", remainingTime);
+    }
 }
