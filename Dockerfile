@@ -12,7 +12,7 @@ COPY . .
 RUN apt-get install maven -y
 
 # Build the application
-RUN mvn package -DskipTests
+RUN mvn package -e -X -DskipTests
 
 # Stage 2: Create the runtime image
 FROM openjdk:17-jdk-slim
