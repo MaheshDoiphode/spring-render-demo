@@ -37,4 +37,14 @@ public class BetPlacementDTO {
     public void setBetValue(String betValue) {
         this.betValue = betValue;
     }
+
+    @Override
+    public String toString() {
+        return "BetPlacementDTO{" +
+                "username='" + username + '\'' +
+                ", betAmount=" + betAmount +
+                ", betType='" + betType + '\'' +
+                ", betValue='" + betValue + '\'' +
+                '}';
+    }
 }

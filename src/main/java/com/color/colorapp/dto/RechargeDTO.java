@@ -19,4 +19,5 @@ public class RechargeDTO {
     public void setAmount(Double amount) {
         this.amount = amount;
     }
+    
 }

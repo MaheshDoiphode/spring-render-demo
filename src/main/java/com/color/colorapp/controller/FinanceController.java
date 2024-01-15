@@ -19,11 +19,12 @@ public class FinanceController {
 
     @PostMapping("/bet")
     public ResponseEntity<?> placeBet(@RequestBody BetPlacementDTO betDto) {
+        System.out.println(betDto);
         try {
             financeService.placeBet(betDto);
             return ResponseEntity.ok("Bet placed successfully");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error placing bet");
+            return ResponseEntity.badRequest().body(e.getMessage() + "Some Error placing bet");
         }
     }
 
@@ -33,7 +34,7 @@ public class FinanceController {
             financeService.declareRoundResult(resultDto);
             return ResponseEntity.ok("Round result declared successfully");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error declaring round result");
+            return ResponseEntity.badRequest().body(e.getMessage() + "Error declaring round result");
         }
     }
 

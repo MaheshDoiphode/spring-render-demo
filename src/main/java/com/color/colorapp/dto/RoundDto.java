@@ -38,4 +38,14 @@ public class RoundDto {
     public void setResultColor(String resultColor) {
         this.resultColor = resultColor;
     }
+
+    @Override
+    public String toString() {
+        return "RoundDto{" +
+                "roundId='" + roundId + '\'' +
+                ", totalBet=" + totalBet +
+                ", winningNumber=" + winningNumber +
+                ", resultColor='" + resultColor + '\'' +
+                '}';
+    }
 }

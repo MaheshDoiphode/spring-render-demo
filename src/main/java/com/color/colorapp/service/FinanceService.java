@@ -22,6 +22,7 @@ public class FinanceService {
     private final UserRepository userRepository;
     private final GameDetailsRepository gameDetailsRepository;
     private final TransactionRepository transactionRepository;
+
     @Autowired
     public FinanceService(RoundRepository roundRepository, UserRepository userRepository, GameDetailsRepository gameDetailsRepository, TransactionRepository transactionRepository) {
         this.roundRepository = roundRepository;
@@ -41,29 +42,23 @@ public class FinanceService {
     @Transactional
     public void placeBet(BetPlacementDTO betDto) {
         User user = userRepository.findByUsername(betDto.getUsername());
-
         if (user == null || user.getWalletBalance() < betDto.getBetAmount()) {
             throw new RuntimeException("Invalid user or insufficient balance");
         }
-
         Round currentRound = getCurrentRound();
         if (currentRound == null || !"ongoing".equals(currentRound.getStatus())) {
             throw new RuntimeException("Betting is closed for the current round");
         }
 
-
-
         user.setWalletBalance(user.getWalletBalance() - betDto.getBetAmount());
         userRepository.save(user);
-
-
+        betDto.setBetAmount(betDto.getBetAmount()-2);
         Round.Bet bet = createBetFromDTO(betDto, user.getUserId());
         currentRound.getBets().add(bet);
         currentRound.setTotalBettingAmount(currentRound.getTotalBettingAmount() + betDto.getBetAmount());
         roundRepository.save(currentRound);
         updatePlatformBalance(2.0);
     }
-
 
 
     @Transactional
@@ -155,16 +150,6 @@ public class FinanceService {
     }
 
 
-
-
-
-
-
-
-
-
-
-
     private Round getCurrentRound() {
         String todayRoundIdPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         return roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix);
@@ -182,25 +167,26 @@ public class FinanceService {
     }
 
 
-
-
     private String getWinningColor(int winningNumber) {
         switch (winningNumber) {
-            case 0: return "purple";
+            case 0:
+                return "purple";
             case 1:
             case 3:
             case 7:
-            case 9: return "green";
+            case 9:
+                return "green";
             case 2:
             case 4:
             case 6:
-            case 8: return "red";
-            case 5: return "violet";
-            default: return "";
+            case 8:
+                return "red";
+            case 5:
+                return "violet";
+            default:
+                return "";
         }
     }
-
-
 
 
     //release 3:

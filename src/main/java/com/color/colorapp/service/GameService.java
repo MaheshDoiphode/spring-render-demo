@@ -40,7 +40,6 @@ public class GameService {
             currentRound.getResult().setWinningNumber(winningNumber);
 
             roundRepository.save(currentRound);
-
             RoundResultDTO resultDto = new RoundResultDTO();
             resultDto.setRoundId(currentRound.getRoundId());
             resultDto.setWinningNumber(winningNumber);
@@ -48,7 +47,7 @@ public class GameService {
         }
     }
 
-    public void startNewBettingRound() {
+    public void startNewBettingRound() throws Exception {
         // Create a new round
         String newRoundId = generateNewRoundId();
         Round newRound = new Round();
@@ -56,7 +55,12 @@ public class GameService {
         newRound.setStatus("ongoing");
         newRound.setTimestamp(Instant.now());
         newRound.setBets(new ArrayList<>());
-        roundRepository.save(newRound);
+        newRound.setTotalBettingAmount(0.00);
+        try{
+            roundRepository.save(newRound);
+        }catch (Exception e){
+            throw new Exception(e.getMessage() + "Error occured while saving info to db");
+        }
     }
 
     private Round getCurrentRound() {

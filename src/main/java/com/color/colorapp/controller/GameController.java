@@ -22,21 +22,23 @@ public class GameController {
     private RoundService roundService;
 
     @GetMapping("/rounds")
-    public ResponseEntity<List<RoundDto>> getRounds() {
+    public ResponseEntity<List<GameResultDto>> getRounds() {
         List<Round> rounds = roundService.getAllRounds();
-        List<RoundDto> roundDtos = rounds.stream()
-                .map(this::convertToDto)
+        List<GameResultDto> roundDtos = rounds.stream()
+                .map(this::convertToGameResultDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(roundDtos);
     }
 
-    private RoundDto convertToDto(Round round) {
-        RoundDto dto = new RoundDto();
-        dto.setRoundId(round.getRoundId());
-        dto.setTotalBet(round.getTotalBettingAmount());
+
+
+    private GameResultDto convertToGameResultDto(Round round) {
+        GameResultDto dto = new GameResultDto();
+        dto.setPeriod(round.getRoundId());
+        dto.setPrice(round.getTotalBettingAmount());
         if (round.getResult() != null) {
-            dto.setWinningNumber(round.getResult().getWinningNumber());
-            dto.setResultColor(round.getResult().getWinningColor());
+            dto.setNumber(round.getResult().getWinningNumber());
+            // Additional logic to set 'result'
         }
         return dto;
     }
@@ -61,14 +63,20 @@ public class GameController {
 
 
 
-    @Scheduled(fixedDelay = 150000) // 2.5 minutes
+    @Scheduled(fixedRate = 150000)
     public void manageGameClosure() {
+        System.out.println("Closing the bets.");
         gameService.phase2(); // Close betting, generate random number, update balances, etc.
     }
 
-    @Scheduled(fixedDelay = 180000) // 3 minutes
+    @Scheduled(fixedRate = 180000)
     public void startNewRound() {
-        gameService.startNewBettingRound(); // Create and open a new round for betting
+        System.out.println("New Round starting");
+        try{
+            gameService.startNewBettingRound(); // Create and open a new round for betting
+        }catch (Exception e){
+            System.out.println(e.getMessage() + " Error occurred in startNewRound");
+        }
     }
 
 

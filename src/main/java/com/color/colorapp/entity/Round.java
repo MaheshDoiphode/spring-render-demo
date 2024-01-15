@@ -155,4 +155,17 @@ public class Round {
     public void setTotalBettingAmount(Double totalBettingAmount) {
         this.totalBettingAmount = totalBettingAmount;
     }
+
+    @Override
+    public String toString() {
+        return "Round{" +
+                "id='" + id + '\'' +
+                ", roundId='" + roundId + '\'' +
+                ", bets=" + bets +
+                ", result=" + result +
+                ", timestamp=" + timestamp +
+                ", status='" + status + '\'' +
+                ", totalBettingAmount=" + totalBettingAmount +
+                '}';
+    }
 }

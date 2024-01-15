@@ -19,4 +19,12 @@ public class RoundResultDTO {
     public void setWinningNumber(int winningNumber) {
         this.winningNumber = winningNumber;
     }
+
+    @Override
+    public String toString() {
+        return "RoundResultDTO{" +
+                "roundId='" + roundId + '\'' +
+                ", winningNumber=" + winningNumber +
+                '}';
+    }
 }

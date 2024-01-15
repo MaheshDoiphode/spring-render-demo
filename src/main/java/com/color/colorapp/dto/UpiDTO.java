@@ -28,4 +28,13 @@ public class UpiDTO {
     public void setUpiId(String upiId) {
         this.upiId = upiId;
     }
+
+    @Override
+    public String toString() {
+        return "UpiDTO{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", upiId='" + upiId + '\'' +
+                '}';
+    }
 }

@@ -37,4 +37,14 @@ public class WithdrawalDTO {
     public void setWithdrawalMethod(String withdrawalMethod) {
         this.withdrawalMethod = withdrawalMethod;
     }
+
+    @Override
+    public String toString() {
+        return "WithdrawalDTO{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", amount=" + amount +
+                ", withdrawalMethod='" + withdrawalMethod + '\'' +
+                '}';
+    }
 }

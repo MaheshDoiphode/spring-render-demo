@@ -37,4 +37,14 @@ public class BankDetailsDTO {
     public void setIfscCode(String ifscCode) {
         this.ifscCode = ifscCode;
     }
+
+    @Override
+    public String toString() {
+        return "BankDetailsDTO{" +
+                "username='" + username + '\'' +
+                ", bankName='" + bankName + '\'' +
+                ", accountNumber='" + accountNumber + '\'' +
+                ", ifscCode='" + ifscCode + '\'' +
+                '}';
+    }
 }
