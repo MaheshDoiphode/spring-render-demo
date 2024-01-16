@@ -24,7 +24,7 @@ public class GameController {
     @Autowired
     private RoundService roundService;
 
-
+    public static Integer timeRemaining = 0;
 
     @GetMapping("/rounds")
     public ResponseEntity<List<GameResultDto>> getRounds() {
@@ -49,6 +49,10 @@ public class GameController {
     }
 
 
+    @GetMapping("/time")
+    public ResponseEntity<Integer> remainingTime(){
+        return ResponseEntity.ok(timeRemaining);
+    }
 
 
 
@@ -71,12 +75,14 @@ public class GameController {
     @Scheduled(fixedRate = 150000)
     public void manageGameClosure() {
         System.out.println("Closing the bets.");
+        timeRemaining=30000;
         gameService.phase2(); // Close betting, generate random number, update balances, etc.
     }
 
     @Scheduled(fixedRate = 180000)
     public void startNewRound() {
         System.out.println("New Round starting");
+        timeRemaining = 180000;
         try {
             gameService.startNewBettingRound(); // Create and open a new round for betting
             timerService.resetTimer(); // Reset the timer whenever a new round starts
@@ -84,6 +90,12 @@ public class GameController {
             System.out.println(e.getMessage() + " Error occurred in startNewRound");
         }
     }
+
+    @Scheduled(fixedRate = 1000)
+    public void reduceTime(){
+        timeRemaining -= 1000;
+    }
+
 
 
 }

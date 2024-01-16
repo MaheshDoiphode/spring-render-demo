@@ -21,9 +21,9 @@ public class DemoApplication {
     public void keepAlive() {
         RestTemplate restTemplate = new RestTemplate();
 
-        //String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
-//        String response = restTemplate.getForObject("http:localhost:8080/hello", String.class);
-//        System.out.println("Response from /hello endpoint: " + response);
+      String response = restTemplate.getForObject("https://demo-spring-8h3e.onrender.com/hello", String.class);
+      //String response = restTemplate.getForObject("http:localhost:8080/hello", String.class);
+      System.out.println("Response from /hello endpoint: " + response);
     }
 
 

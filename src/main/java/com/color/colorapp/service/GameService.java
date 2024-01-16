@@ -4,6 +4,7 @@ import com.color.colorapp.dto.RoundResultDTO;
 import com.color.colorapp.entity.Round;
 import com.color.colorapp.repository.RoundRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -82,6 +83,8 @@ public class GameService {
         }
         return todayRoundIdPrefix + String.format("%02d", nextRoundNumber);
     }
+
+
 
 
 
