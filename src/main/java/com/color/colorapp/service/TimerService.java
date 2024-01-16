@@ -26,4 +26,9 @@ public class TimerService {
         }
         messagingTemplate.convertAndSend("/topic/timer", remainingTime);
     }
+
+    public long getRemainingTime() {
+        long remainingTime = roundEndTime - System.currentTimeMillis();
+        return remainingTime < 0 ? 0 : remainingTime;
+    }
 }
