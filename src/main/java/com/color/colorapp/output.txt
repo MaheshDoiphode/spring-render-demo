@@ -17,7 +17,7 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
-    @Scheduled(fixedRate = 300000) // 5 minutes in milliseconds
+    @Scheduled(fixedRate = 300000)
     public void keepAlive() {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -178,7 +178,6 @@ public class GameController {
         List<GameResultDto> roundDtos = rounds.stream()
                 .map(this::convertToGameResultDto)
                 .collect(Collectors.toList());
-        System.out.println("All Rounds + " + roundDtos);
         return ResponseEntity.ok(roundDtos);
     }
 
@@ -215,19 +214,19 @@ public class GameController {
 
 
 
-    @Scheduled(fixedDelay = 150000)
+    @Scheduled(fixedRate = 150000)
     public void manageGameClosure() {
         System.out.println("Closing the bets.");
         gameService.phase2(); // Close betting, generate random number, update balances, etc.
     }
 
-    @Scheduled(fixedDelay = 180000)
+    @Scheduled(fixedRate = 180000)
     public void startNewRound() {
         System.out.println("New Round starting");
         try{
             gameService.startNewBettingRound(); // Create and open a new round for betting
         }catch (Exception e){
-            System.out.println(e.getMessage() + " Error occured in startNewRound");
+            System.out.println(e.getMessage() + " Error occurred in startNewRound");
         }
     }
 
@@ -1331,6 +1330,7 @@ public class FinanceService {
     private final UserRepository userRepository;
     private final GameDetailsRepository gameDetailsRepository;
     private final TransactionRepository transactionRepository;
+
     @Autowired
     public FinanceService(RoundRepository roundRepository, UserRepository userRepository, GameDetailsRepository gameDetailsRepository, TransactionRepository transactionRepository) {
         this.roundRepository = roundRepository;
@@ -1350,30 +1350,23 @@ public class FinanceService {
     @Transactional
     public void placeBet(BetPlacementDTO betDto) {
         User user = userRepository.findByUsername(betDto.getUsername());
-
         if (user == null || user.getWalletBalance() < betDto.getBetAmount()) {
-            System.out.println("Finance Service place bet - Invalid user or insufficient ");
             throw new RuntimeException("Invalid user or insufficient balance");
         }
-
         Round currentRound = getCurrentRound();
         if (currentRound == null || !"ongoing".equals(currentRound.getStatus())) {
             throw new RuntimeException("Betting is closed for the current round");
         }
 
-
-
         user.setWalletBalance(user.getWalletBalance() - betDto.getBetAmount());
         userRepository.save(user);
-
-
+        betDto.setBetAmount(betDto.getBetAmount()-2);
         Round.Bet bet = createBetFromDTO(betDto, user.getUserId());
         currentRound.getBets().add(bet);
         currentRound.setTotalBettingAmount(currentRound.getTotalBettingAmount() + betDto.getBetAmount());
         roundRepository.save(currentRound);
         updatePlatformBalance(2.0);
     }
-
 
 
     @Transactional
@@ -1465,20 +1458,8 @@ public class FinanceService {
     }
 
 
-
-
-
-
-
-
-
-
-
-
     private Round getCurrentRound() {
         String todayRoundIdPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        System.out.println("todayRoundIdPrefix"  + todayRoundIdPrefix);
-        System.out.println("current roudn : " + roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix));
         return roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(todayRoundIdPrefix);
     }
 
@@ -1494,25 +1475,26 @@ public class FinanceService {
     }
 
 
-
-
     private String getWinningColor(int winningNumber) {
         switch (winningNumber) {
-            case 0: return "purple";
+            case 0:
+                return "purple";
             case 1:
             case 3:
             case 7:
-            case 9: return "green";
+            case 9:
+                return "green";
             case 2:
             case 4:
             case 6:
-            case 8: return "red";
-            case 5: return "violet";
-            default: return "";
+            case 8:
+                return "red";
+            case 5:
+                return "violet";
+            default:
+                return "";
         }
     }
-
-
 
 
     //release 3:
@@ -1608,8 +1590,6 @@ public class GameService {
             currentRound.getResult().setWinningNumber(winningNumber);
 
             roundRepository.save(currentRound);
-
-            System.out.println("Closing the bets for current round : " + currentRound);
             RoundResultDTO resultDto = new RoundResultDTO();
             resultDto.setRoundId(currentRound.getRoundId());
             resultDto.setWinningNumber(winningNumber);
@@ -1624,17 +1604,13 @@ public class GameService {
         newRound.setRoundId(newRoundId);
         newRound.setStatus("ongoing");
         newRound.setTimestamp(Instant.now());
-        System.out.println("Start new vetting roufn timestapom : " + newRound.getTimestamp());
         newRound.setBets(new ArrayList<>());
         newRound.setTotalBettingAmount(0.00);
-        System.out.println(newRound);
-
         try{
             roundRepository.save(newRound);
         }catch (Exception e){
             throw new Exception(e.getMessage() + "Error occured while saving info to db");
         }
-        System.out.println(roundRepository.findTopByRoundIdStartingWithOrderByRoundIdDesc(newRound.getRoundId()));
     }
 
     private Round getCurrentRound() {
@@ -1689,7 +1665,6 @@ public class RoundService {
     }
 
     public List<Round> getAllRounds() {
-        System.out.println("All rounds : "  + roundRepository.findAll());
         return roundRepository.findAll();
     }
 }

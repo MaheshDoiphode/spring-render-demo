@@ -2,6 +2,7 @@ package com.color.colorapp.controller;
 
 import com.color.colorapp.service.GameService;
 import com.color.colorapp.service.RoundService;
+import com.color.colorapp.service.TimerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,9 +18,13 @@ import java.util.stream.Collectors;
 public class GameController {
 
     @Autowired
+    private TimerService timerService;
+    @Autowired
     private GameService gameService;
     @Autowired
     private RoundService roundService;
+
+
 
     @GetMapping("/rounds")
     public ResponseEntity<List<GameResultDto>> getRounds() {
@@ -72,9 +77,10 @@ public class GameController {
     @Scheduled(fixedRate = 180000)
     public void startNewRound() {
         System.out.println("New Round starting");
-        try{
+        try {
             gameService.startNewBettingRound(); // Create and open a new round for betting
-        }catch (Exception e){
+            timerService.resetTimer(); // Reset the timer whenever a new round starts
+        } catch (Exception e) {
             System.out.println(e.getMessage() + " Error occurred in startNewRound");
         }
     }
