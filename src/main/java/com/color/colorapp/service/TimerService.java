@@ -1,34 +1,60 @@
 package com.color.colorapp.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.scheduling.annotation.Scheduled;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 @Service
-public class TimerService {
+public class TimerService extends TextWebSocketHandler {
+
     private static final long ROUND_DURATION = 180000; // 3 minutes in milliseconds
     private long roundEndTime;
+    private Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    public TimerService() {
+        resetTimer();
+    }
 
-    public void resetTimer() {
-        roundEndTime = System.currentTimeMillis() + ROUND_DURATION;
-        broadcastTime();
+    @Override
+    public void afterConnectionEstablished(WebSocketSession session) throws IOException {
+        sessions.put(session.getId(), session);
+        broadcastTime(session, getRemainingTime());
     }
 
     @Scheduled(fixedRate = 1000) // Update every second
     public void broadcastTime() {
-        long remainingTime = roundEndTime - System.currentTimeMillis();
-        if (remainingTime < 0) {
-            remainingTime = 0;
+        long remainingTime = getRemainingTime();
+        sessions.values().forEach(session -> broadcastTime(session, remainingTime));
+    }
+
+    private void broadcastTime(WebSocketSession session, long remainingTime) {
+        if (session.isOpen()) {
+            try {
+                session.sendMessage(new TextMessage(Long.toString(remainingTime)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        messagingTemplate.convertAndSend("/topic/timer", remainingTime);
+    }
+
+    public void resetTimer() {
+        roundEndTime = System.currentTimeMillis() + ROUND_DURATION;
     }
 
     public long getRemainingTime() {
         long remainingTime = roundEndTime - System.currentTimeMillis();
-        return remainingTime < 0 ? 0 : remainingTime;
+        return Math.max(remainingTime, 0);
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        sessions.remove(session.getId());
     }
 }
